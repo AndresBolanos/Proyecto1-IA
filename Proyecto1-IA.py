@@ -1,9 +1,15 @@
+# -*- coding: cp1252 -*-
+
 from sklearn.datasets import load_iris
 import numpy as np
+
+rango = [[4.3,7.9],[2.0,4.4],[1.0,6.9],[0.1,2.5]]
 
 #Funcion para cargar los datos de Iris
 def Load_Irirs_Data():    
     iris = load_iris()
+    #print(iris.DESCR)
+    #print(iris.data)
     # Arreglos de numpy
     train_data = iris.data
     train_labels = iris.target
@@ -23,11 +29,15 @@ def Load_Iris_Names():
     return train_names
 
 #Funcion para generar el W aleatorio
-def Generate_W(filas, columnas):
+def Generate_W_Iris(filas, columnas):
+    w = np.zeros((filas, columnas))
     #Genero la matriz aleatoria con numeros entre 1 y 255
     #con la cantidad de filas y  columnas que recibe como parametro la funcion
-    w = np.random.randint(1, 255, (filas, columnas))
+    #w = np.random.uniform(1, 255, (filas, columnas)) #Random con decimales #####CIFAR####
     #retorna el w aleatorio
+    for i in range(filas):
+        for j in range(columnas):
+            w[i][j] = np.random.uniform(rango[j][0], rango[j][1])
     return w 
 
 # Funcion para multiplicar cada elemento de iris
@@ -37,7 +47,7 @@ def Compare_Iris_Data():
     X = Load_Irirs_Data() # Se trae todos los datos de iris
     Index = Load_Iris_Index() # Se trae todos los indices de resultado de iris
     Class = Load_Iris_Names()# Se trae todos los nombres de iris
-    W = Generate_W(len(X[0]), len(Class)+1) #Genera el w aleatorio
+    W = Generate_W_Iris(len(X[0]), len(Class)+1) #Genera el w aleatorio
     number_Items = len(X) #Largo de los datos
     #Aplicamos la multiplicacion para cada uno de los elementos del data set
     for i in range(number_Items):
@@ -55,3 +65,11 @@ def Hinge_Loss(s,yi):
 
 Compare_Iris_Data()
 
+#Algoritmo genético
+#Parámetros:
+#   cantidad de generaciones, porcentaje mutación, % cruces
+#Métodos para cruce:
+#   Cruzar el más apto con cada uno de los demás
+#   El más apto con el más apto de lo menos aptos y así sucesivamente
+#   Agarrar el porcentaje de cruce y empezar desde el centro para cruzar uno apto con uno no apto
+#      y así hasta llegar al más apto con el menos apto (en el caso de 100% de cruce)
