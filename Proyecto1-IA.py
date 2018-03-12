@@ -131,21 +131,50 @@ def Generate_W(filas, columnas):
 #Funcion para cruzar en el set de datos de Iris
 #Cruza el más apto con el más apto de los menos aptos
 def Cruzar_Generacion(Lista_W, Lista_Loss, Lista_Indices):
-    nuevoW = []
+    W_Loss_Indices = [[],[],[]]                                       #Lista que tiene lista de W's, otra de los Loss y la otra de los indices
+    nuevoW1 = []
+    nuevoW2 = []
     #Si la cantidad de W no es par, el más óptimo pasa sin cruzarse
     if len(Lista_Indices)%2 != 0:
-        nuevoW.append(Lista_W[0])
-        Lista_Indices = Lista_Indices[1:]                #Quita el más óptimo para no cruzarlo
+        W_Loss_Indices[0].append(Lista_W[Lista_Indices[0]])
+        Lista_Indices = Lista_Indices[1:]                             #Quita el más óptimo para no cruzarlo
     #Solo va a recorrer la mitad más optima y compararlos con la otra mitad menos óptima
-    for i in range(len(Lista_Indices)/2): 
-        W_Optimo = Lista_W[i]                            #Entre más bajo el i, más óptimo el W
-        W_NoOptimo = Lista_W[i+(len(Lista_Indices)/2)]   #En lista de len=10 se le suma la mitad y sería: 0 con 5, 1 con 6, 2 con 7...
+    for i in range(len(Lista_Indices)/2):
+        PosW_NoOptimo = i+(len(Lista_Indices)/2)                      #En lista de len=10 se le suma la mitad y sería: 0 con 5, 1 con 6, 2 con 7...
+        W_Optimo = Lista_W[Lista_Indices[i]]                          #Entre más bajo el i, más óptimo el W
+        W_NoOptimo = Lista_W[Lista_Indices[PosW_NoOptimo]]            
 
-        #Sería ingresar a cada elemento de esas 2 matrices y cruzarlos como habíamos
-        #hecho en la hoja del cuaderno
-        
-        
-            
+        NuevaClase1 = []                                                                        #El nuevo W con los genes más óptimos
+        NuevaClase2 = []                                                                        #El nuevo W con los genes cruzados
+        #La clase que mejor reconozca la va a dejar igual en un nuevoW, en el otro va una combinación
+        for j in range(len(W_Optimo)-1):                                                        #Recorre la cantidad de clases que tiene cada W (3 en el caso de IRIS)
+            if (Lista_Loss[Lista_Indices[i]][j]<=Lista_Loss[Lista_Indices[PosW_NoOptimo]][j]):  #Compara los Loss de las clases de los W y agrega el mejor
+                NuevaClase1 += [W_Optimo[j]]          
+            else:
+                NuevaClase1 += [W_NoOptimo[j]]
+                
+            regula = 1                                                                           #1 para agarrar dato de la clase 1 y -1 de la clase 2
+            for k in range(len(W_Optimo[j])-1):                                                  #Recorre cada dato referente a cada clase (pétalos, hojas... en IRIS)
+                if (regula == 1):                                  
+                    NuevaClase2 += [W_Optimo[j][i]]                                              #Agrega un gen del W óptimo al nuevo W
+                else:
+                    NuevaClase2 += [W_NoOptimo[j][i]]                                            #Agrega un gen del W no óptimo al nuevo W
+                regula *= -1
+
+            nuevoW1.append(NuevaClase1)                                                          #El nuevo W con las mejores clases
+            nuevoW2.append(NuevaClase2)                                                          #El nuevo W con el cruce de genes de los padres
+
+        W_Loss_Indices[0].append(nuevoW1)                                                        #Se agrega la nueva generación de W
+        W_Loss_Indices[0].append(nuevoW2)
+
+        #W_Loss_Indices[1].append(Calculo_Loss(Lista_W[i],X,Index))                               #Guarda la lista de loss de clase y de W para cada W generado
+        #W_Loss_Indices[2].append(Insertar_Indices(Lista_Indices,i,Lista_Loss))                   #Guarda los índices ordenados de los W del loss menor al mayor
+
+    print W_Loss_Indices
+
+    return W_Loss_Indices
+                    
+
         
     
 #################################### MUTATION W #######################################
@@ -192,12 +221,17 @@ def Compare_Iris_Data(k,mutacion,cruce):
         Lista_Indices = Insertar_Indices(Lista_Indices,i,Lista_Loss) #Guarda los índices ordenados de los W del loss menor al mayor
         
     #Algoritmo genético con N repeticiones o hasta que encuentre uno óptimo con Loss <= Optimo
-    for i in range(N):
+    for i in range(N-1):
         optimo = Comprobar_Optimo(valOptimo, Lista_Loss)             #Comprueba si ya hay algún W óptimo
         if optimo != -1:
             return ("El optimo es: ", Lista_W[optimo])
         else:
-            Lista_W = Cruzar_Generacion(Lista_W, Lista_Loss, Lista_Indices)
+            W_Loss_Indices = Cruzar_Generacion(Lista_W, Lista_Loss, Lista_Indices)
+            return 0 #Por mientras
+            Lista_W = W_Loss_Indices[0]
+            Lista_Loss = W_Loss_Indices[1]
+            Lista_Indices = W_Loss_Indices[2]
+         
     return ("No hay óptimo")
     print(Lista_Loss)
 
