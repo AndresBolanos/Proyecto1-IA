@@ -4,6 +4,7 @@ from sklearn.datasets import load_iris
 import numpy as np
 import pickle
 import collections
+import random
 
 rango = [[4.3,7.9],[2.0,4.4],[1.0,6.9],[0.1,2.5]]
 ####################################### LOAD IRIS DATA #######################################
@@ -150,7 +151,7 @@ def Cruzar_Generacion(Lista_W, Lista_Loss, Lista_Indices, X, Index):
         #La clase que mejor reconozca la va a dejar igual en un nuevoW, en el otro va una combinación
         for j in range(len(W_Optimo)):                                                          #Recorre la cantidad de clases que tiene cada W (3 en el caso de IRIS)
             NuevaClase1 = []                                                                    #El nuevo W con los genes más óptimos
-            NuevaClase2 = [] 
+            NuevaClase2 = []
             if (Lista_Loss[Lista_Indices[i]][j]<=Lista_Loss[Lista_Indices[PosW_NoOptimo]][j]):  #Compara los Loss de las clases de los W y agrega el mejor
                 NuevaClase1.append((W_Optimo[j]).tolist())          
             else:
@@ -191,8 +192,52 @@ def Cruzar_Generacion(Lista_W, Lista_Loss, Lista_Indices, X, Index):
         
     
 #################################### MUTATION W #######################################
-#Funcion para mutar una fila del set de iris
-#Muta la fila con mas Loss
+
+#Funcion de mutacion 1
+#Selecciona con base al porcentaje de mutacion una determinada cantidad de W
+#Genera un nuevo W con valores random de posiciones random segun la cantidad q se indica en el procentaje de mutacion 2
+#Ese nuevo W se cambia por el que tenia el Loss mas bajo
+def Mutacion_1(Lista_W,Lista_Indices,Lista_Loss,mutacion_1, mutacion_2):
+    cantidad_W = int(round(len(Lista_W) * mutacion_1)) #Calcula la cantidad de W a escoger segun el procentaje
+    cantidad_Genes = int(round(len(Lista_W[0][0])) * mutacion_2) #Indica la cantidad de genes que se van a mutar dentro de la W
+    posicion_1 = ((len(Lista_Indices)/2) -1)+len(Lista_Indices)%2 #Seleccion los masomenos aptos para mutar
+    posicion_2 = posicion_1 +1 #Escoge el siguiente mas apto
+    for c in range(cantidad_W):
+        W1 = Lista_W[Lista_Indices[posicion_1]]
+        W2 = Lista_W[Lista_Indices[posicion_2]]
+        nueva_Matriz = np.copy(W2)
+        for g in range(cantidad_Genes): #De acuerdo al porcenta de mutacion 2
+            i = random.randint(0,len(W1)-1)
+            j = random.randint(0,len(W1[0])-1)
+            nueva_Matriz[i][j] = random.uniform(W1[i][j],W2[i][j]) #Asigna el valor del random del rango
+        Lista_W[Lista_Indices[posicion_2]] = nueva_Matriz
+        #Movemos los pivotes en ambos extremos para la siguiente iteracion
+        posicion_1 -= 1
+        posicion_2 += 1
+    return Lista_W 
+
+#Forma de mutacion 2
+#Selecciona con base al porcentaje de mutacion una determinada cantidad de W
+#Genera un nuevo W con el procentaje de mutacion 2 en cada fila de W
+#Aplica el porcentaje a cada fila de W
+#Mantiene el mas apto
+def Mutacion_2(Lista_W,Lista_Indices,Lista_Loss,mutacion_1, mutacion_2):
+    cantidad_W = int(round(len(Lista_W) * mutacion_1)) #Calcula la cantidad de W a escoger segun el procentaje
+    cantidad_Genes = int(round(len(Lista_W[0][0])) * mutacion_2) #Indica la cantidad de genes que se van a mutar dentro de la W
+    posicion_1 = ((len(Lista_Indices)/2) -1)+len(Lista_Indices)%2 #Seleccion los masomenos aptos para mutar
+    posicion_2 = posicion_1 +1 #Escoge el siguiente mas apto
+    for c in range(cantidad_W):
+        W1 = Lista_W[Lista_Indices[posicion_1]]
+        W2 = Lista_W[Lista_Indices[posicion_2]]
+        nueva_Matriz = np.copy(W2)
+        for f in range(len(W1)): #Recorre cada fila de W
+            for g in range(cantidad_Genes):
+                j = random.randint(0,len(W1[0])-1)
+                nueva_Matriz[f][j] = random.uniform(W1[f][j],W2[f][j]) #Asigna el valor del random del rango
+        Lista_W[Lista_Indices[posicion_2]] = nueva_Matriz
+        posicion_1 -= 1
+        posicion_2 += 1 #Movemos los pivotes en ambos extremos para la siguiente iteracion
+    return Lista_W 
 
 
 
@@ -211,13 +256,16 @@ def Calculo_Loss(W,X,Labels):
     return Lista_Loss
 
 def Comprobar_Optimo(valOptimo, Lista_Loss):
-    for i in range(len(Lista_Loss)-1):
-        if Lista_Loss[i][len(Lista_Loss[0])-1] <= valOptimo:
+    for i in range(len(Lista_Loss)):
+        print "W[",i,"]: ", Lista_Loss[i][-1]
+        if Lista_Loss[i][-1] <= valOptimo:
             return i
     return -1                                                  #si no encontró ningún óptimo
 
-def Compare_Iris_Data(k,mutacion,cruce):
-    valOptimo = 100                         #Loss óptimo
+#mutacion_1: cantidad de Wi que se van a mutar
+#mutacion_2: cantidad de cambio en los genes de cada Wi
+def Compare_Iris_Data(k,mutacion_1,mutacion_2,cruce):
+    valOptimo = 10000                        #Loss óptimo
     N = 10                                  #Cantidad de generaciones a evaluar 
     Lista_Loss = []                         #Guarda el loss para cada clase
     L = 0;                                  #Contiene la sumatoria de aplicar hinge-loss a cada elemento
@@ -238,7 +286,7 @@ def Compare_Iris_Data(k,mutacion,cruce):
         print "\nGeneración: ", i+1
         optimo = Comprobar_Optimo(valOptimo, Lista_Loss)             #Comprueba si ya hay algún W óptimo
         if optimo != -1:
-            print "El optimo es: ", Lista_W[optimo]
+            print "El optimo es: ", Lista_W[optimo], "\ncon loss de ", Lista_Loss[optimo][-1]
             return 0
         else:
             #print "W's: ", Lista_W
@@ -246,6 +294,12 @@ def Compare_Iris_Data(k,mutacion,cruce):
             Lista_W = W_Loss_Indices[0]
             Lista_Loss = W_Loss_Indices[1]
             Lista_Indices = W_Loss_Indices[2]
+
+        print "Sin mutación: ", Lista_W
+
+        Lista_W = Mutacion_1(Lista_W,Lista_Indices,Lista_Loss,mutacion_1, mutacion_2)  #Mutación de la generación
+
+        print "Con mutación: ", Lista_W
 
     print "\nNo hay óptimo"
          
@@ -304,7 +358,7 @@ def Hinge_Loss(s,yi):
             hinge_loss += np.sum(np.maximum(0,s[i]-s[yi]+1),axis=0)
     return hinge_loss
 
-Compare_Iris_Data(4,20,20)
+Compare_Iris_Data(10,0.20,0.60,0.20)   #(TamañoPoblación,CantWParaMutar,CuántoCambioEnGenes)
 #Compare_CFAR_Data()
 
 #Algoritmo genético
