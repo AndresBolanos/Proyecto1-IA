@@ -5,6 +5,7 @@ import numpy as np
 import pickle
 import collections
 import random
+import matplotlib.pyplot as plt
 
 rango = [[4.3,7.9],[2.0,4.4],[1.0,6.9],[0.1,2.5]]
 ####################################### LOAD IRIS DATA #######################################
@@ -121,9 +122,7 @@ def Generate_W(filas, columnas):
     mu, sigma = 50,22 # mean and standard deviation
     W = []
     for i in range (filas):
-        W.append(np.absolute(np.random.normal(mu, sigma, columnas).tolist()))
-    #print("Largo de filas de W "+str(len(W)))
-    #print("Largo de columnas de W "+str(len(W[0])))   
+        W.append(np.absolute(np.random.normal(mu, sigma, columnas).tolist()))   
     W = np.array(W)
     return W
 
@@ -132,13 +131,11 @@ def Generate_W(filas, columnas):
 #Funcion para cruzar en el set de datos de Iris
 #Cruza el más apto con el más apto de los menos aptos
 def Cruzar_Generacion(Lista_W, Lista_Loss, Lista_Indices, X, Index):
-    W_Loss_Indices = [[],[],[]]                                       #Lista que tiene lista de W's, otra de los Loss y la otra de los indices
+    W_Loss_Indices = []                                       #Lista que tiene lista de W's, otra de los Loss y la otra de los indices
     #Si la cantidad de W no es par, el más óptimo pasa sin cruzarse
-
-    print "ListaWPrimera: ", Lista_W
     
     if len(Lista_Indices)%2 != 0:
-        W_Loss_Indices[0].append(Lista_W[Lista_Indices[0]])
+        W_Loss_Indices.append(Lista_W[Lista_Indices[0]])
         Lista_Indices = Lista_Indices[1:]                             #Quita el más óptimo para no cruzarlo
     #Solo va a recorrer la mitad más optima y compararlos con la otra mitad menos óptima
     for i in range(len(Lista_Indices)/2):
@@ -165,26 +162,11 @@ def Cruzar_Generacion(Lista_W, Lista_Loss, Lista_Indices, X, Index):
                     NuevaClase2.append(W_NoOptimo[j][k])                                         #Agrega un gen del W no óptimo al nuevo W
                 regula *= -1
 
-            #print "NuevaClase1: ", NuevaClase1
-            #print "NuevaClase2: ", NuevaClase2
-
             nuevoW1.append(NuevaClase1[0])                                                       #El nuevo W con las mejores clases
             nuevoW2.append(NuevaClase2)                                                          #El nuevo W con el cruce de genes de los padres
-
-        #print "NuevoW1: ", nuevoW1
-        #print "NuevoW2: ", nuevoW2 
         
-        W_Loss_Indices[0].append(np.array(nuevoW1))                                                 #Se agrega el W con las clases más optimas
-        #print "W1: ", W_Loss_Indices[0]
-        W_Loss_Indices[1].append(Calculo_Loss(W_Loss_Indices[0][-1],X,Index))                       #Guarda la lista de loss de clase y de W para cada W generado
-        W_Loss_Indices[2] = Insertar_Indices(W_Loss_Indices[2],len(W_Loss_Indices[0])-1,Lista_Loss) #Guarda los índices ordenados de los W del loss menor al mayor
-
-        W_Loss_Indices[0].append(np.array(nuevoW2))                                                 #Se agrega el W cruzado
-        #print "W2: ", W_Loss_Indices[0]
-        W_Loss_Indices[1].append(Calculo_Loss(W_Loss_Indices[0][-1],X,Index))                       #Guarda la lista de loss de clase y de W para cada W generado
-        W_Loss_Indices[2] = Insertar_Indices(W_Loss_Indices[2],len(W_Loss_Indices[0])-1,Lista_Loss) #Guarda los índices ordenados de los W del loss menor al mayor
-
-    print "Generación nueva:", W_Loss_Indices
+        W_Loss_Indices.append(np.array(nuevoW1))                                                 #Se agrega el W con las clases más optimas
+        W_Loss_Indices.append(np.array(nuevoW2))                                                 #Se agrega el W cruzado
 
     return W_Loss_Indices
                     
@@ -257,7 +239,7 @@ def Calculo_Loss(W,X,Labels):
 
 def Comprobar_Optimo(valOptimo, Lista_Loss):
     for i in range(len(Lista_Loss)):
-        print "W[",i,"]: ", Lista_Loss[i][-1]
+        #print "W[",i,"]: ", Lista_Loss[i][-1]
         if Lista_Loss[i][-1] <= valOptimo:
             return i
     return -1                                                  #si no encontró ningún óptimo
@@ -265,8 +247,11 @@ def Comprobar_Optimo(valOptimo, Lista_Loss):
 #mutacion_1: cantidad de Wi que se van a mutar
 #mutacion_2: cantidad de cambio en los genes de cada Wi
 def Compare_Iris_Data(k,mutacion_1,mutacion_2,cruce):
-    valOptimo = 10000                        #Loss óptimo
-    N = 10                                  #Cantidad de generaciones a evaluar 
+    #Variable del grafico
+    eje_X = []
+    eje_Y = []
+    valOptimo = 9000                        #Loss óptimo
+    N = 100                                #Cantidad de generaciones a evaluar 
     Lista_Loss = []                         #Guarda el loss para cada clase
     L = 0;                                  #Contiene la sumatoria de aplicar hinge-loss a cada elemento
     X = Load_Irirs_Data()                   #Se trae todos los datos de iris
@@ -280,27 +265,65 @@ def Compare_Iris_Data(k,mutacion_1,mutacion_2,cruce):
         Lista_W.append(Generate_W(len(Class),len(X[0])))             #Genera el w aleatorio ##Automaticamente en la funcion que genera el +1 del Bias Trick
         Lista_Loss.append(Calculo_Loss(Lista_W[i],X,Index))          #Guarda la lista de loss de clase y de W para cada W generado
         Lista_Indices = Insertar_Indices(Lista_Indices,i,Lista_Loss) #Guarda los índices ordenados de los W del loss menor al mayor
-        
+
+    print(Lista_Loss)
+    print(Lista_Indices)
     #Algoritmo genético con N repeticiones o hasta que encuentre uno óptimo con Loss <= Optimo
+    cont = 1
     for i in range(N):
         print "\nGeneración: ", i+1
         optimo = Comprobar_Optimo(valOptimo, Lista_Loss)             #Comprueba si ya hay algún W óptimo
         if optimo != -1:
-            print "El optimo es: ", Lista_W[optimo], "\ncon loss de ", Lista_Loss[optimo][-1]
+            print("Eje X")
+            print(eje_X)
+            print("Eje Y")
+            print(eje_Y)
+            plt.plot(eje_X,eje_Y)
+            plt.xlabel('Generation')
+            plt.ylabel('Loss')
+            plt.title('Generation VS Loss')
+            plt.grid(True)  # Activa cuadrícula del gráfico pero no se muestra
+            plt.show()
             return 0
         else:
-            #print "W's: ", Lista_W
-            W_Loss_Indices = Cruzar_Generacion(Lista_W, Lista_Loss, Lista_Indices, X, Index)
-            Lista_W = W_Loss_Indices[0]
-            Lista_Loss = W_Loss_Indices[1]
-            Lista_Indices = W_Loss_Indices[2]
-
-        print "Sin mutación: ", Lista_W
+            Lista_W = Cruzar_Generacion(Lista_W, Lista_Loss, Lista_Indices, X, Index)
 
         Lista_W = Mutacion_1(Lista_W,Lista_Indices,Lista_Loss,mutacion_1, mutacion_2)  #Mutación de la generación
-
-        print "Con mutación: ", Lista_W
-
+        Lista_Indices = []
+        for i in range(k):
+            Lista_Loss[i] = Calculo_Loss(Lista_W[i],X,Index)
+            Lista_Indices = Insertar_Indices(Lista_Indices,i,Lista_Loss)
+          
+        #Este codigo es si se quiere sacar el promedio general del loss de toda la poblacion
+        """
+        promedio_Loss = 0
+        for i in range(len(Lista_Loss)):
+            promedio_Loss += Lista_Loss[i][len(Lista_Loss[i])-1]
+        print("Promedio")
+        promedio_Loss = promedio_Loss/len(Lista_Loss)
+        print(promedio_Loss)"""
+        
+        #Este codigo es para guardar el loss del W mas apto
+        print(Lista_Loss)
+        print(Lista_Indices)
+        eje_X = eje_X+[cont]
+        eje_Y.append(Lista_Loss[Lista_Indices[0]][-1])
+        print("Eje X")
+        print(eje_X)
+        print("Eje Y")
+        print(eje_Y)
+        cont+=1
+        
+    print("Eje X")
+    print(eje_X)
+    print("Eje Y")
+    print(eje_Y)
+    plt.plot(eje_X,eje_Y)
+    plt.xlabel('Generation')
+    plt.ylabel('Loss')
+    plt.title('Generation VS Loss')
+    plt.grid(True)  # Activa cuadrícula del gráfico pero no se muestra
+    plt.show()
     print "\nNo hay óptimo"
          
     return 0
@@ -358,7 +381,7 @@ def Hinge_Loss(s,yi):
             hinge_loss += np.sum(np.maximum(0,s[i]-s[yi]+1),axis=0)
     return hinge_loss
 
-Compare_Iris_Data(10,0.20,0.60,0.20)   #(TamañoPoblación,CantWParaMutar,CuántoCambioEnGenes)
+Compare_Iris_Data(10,0.20,0.60,0.80)   #(TamañoPoblación,CantWParaMutar,CuántoCambioEnGenes)
 #Compare_CFAR_Data()
 
 #Algoritmo genético
