@@ -119,13 +119,13 @@ def Generate_W(filas, columnas):
     #Genero la matriz aleatoria con numeros entre 1 y 255
     #con la cantidad de filas y  columnas que recibe como parametro la funcion
     #w = np.random.randint(1, 255, (filas, columnas)) #Random con decimales #####CIFAR###
-    # mu, sigma = 5,2
+    # mu, sigma = 4,2 
     mu, sigma = 4,2 # mean and standard deviation  
     W = []
     for i in range (filas):
         W.append(np.absolute(np.random.normal(mu, sigma, columnas).tolist()))   
     W = np.array(W)
-    print(W)
+    #print(W)
     return W
 
 #Funcion para generar el W aleatorio en CFAR-10 y Iris con una distribucion normal
@@ -139,7 +139,7 @@ def Generate_W_CFAR(filas, columnas):
     for i in range (filas):
         W.append(np.absolute(np.random.normal(mu, sigma, columnas).tolist()))   
     W = np.array(W)
-    print(W)
+    #print(W)
     return W
 
 #################################### MIX W #######################################
@@ -393,24 +393,25 @@ def Calculo_Loss(W,X,Labels):
     Efectividad = Efectividad/len(X)                                             #Hace la sumatoria de todos los loss y lo pone en la ultima posicion
     return Lista_Loss
 
-def Comprobar_Optimo(valOptimo, Lista_Loss):
+'''def Comprobar_Optimo(valOptimo, Lista_Loss):
     for i in range(len(Lista_Loss)):
         #print "W[",i,"]: ", Lista_Loss[i][-1]
         if Lista_Loss[i][-1] <= valOptimo:
             return i
     return -1                                                  #si no encontró ningún óptimo
-
+'''
 #mutacion_1: cantidad de Wi que se van a mutar
 #mutacion_2: cantidad de cambio en los genes de cada Wi
 def Compare_Iris_Data(k,mutacion_1,mutacion_2,cruce):
     #Variable del grafico
     global Efectividad
+    Efectividad_aux = 0
     eje_X = []
     eje_Y = []
     eje_X1 = []
     eje_Y1 = []
-    valOptimo = 4                    #Loss óptimo
-    N = 200                                 #Cantidad de generaciones a evaluar 
+    valOptimo = 0.5                       #Porcentaje óptimo
+    N = 100                                 #Cantidad de generaciones a evaluar 
     Lista_Loss = []                         #Guarda el loss para cada clase
     L = 0;                                  #Contiene la sumatoria de aplicar hinge-loss a cada elemento
     X = Load_Irirs_Data()                   #Se trae todos los datos de iris
@@ -428,9 +429,9 @@ def Compare_Iris_Data(k,mutacion_1,mutacion_2,cruce):
     #Algoritmo genético con N repeticiones o hasta que encuentre uno óptimo con Loss <= Optimo
     cont = 1
     for i in range(N):
-        print "\nGeneración: ", i+1
-        optimo = Comprobar_Optimo(valOptimo, Lista_Loss)             #Comprueba si ya hay algún W óptimo
-        if optimo != -1 and i > 1:
+        print "\nGeneración: ", i+1            #Comprueba si ya hay algún W óptimo
+        print "Optimo: ", valOptimo
+        if Efectividad_aux >= valOptimo and i > 1:
             plt.subplot(2,1,1)   
             plt.plot(eje_X1,eje_Y1)
             plt.xlabel('Generation')
@@ -457,6 +458,11 @@ def Compare_Iris_Data(k,mutacion_1,mutacion_2,cruce):
         for i in range(k):
             Lista_Loss[i] = Calculo_Loss(Lista_W[i],X,Index)
             Lista_Indices = Insertar_Indices(Lista_Indices,i,Lista_Loss)
+            if Efectividad_aux < Efectividad:
+                Efectividad_aux = Efectividad 
+        
+
+        print "Efectividad: ", Efectividad_aux
           
         #Este codigo es si se quiere sacar el promedio general del loss de toda la poblacion
         
@@ -469,7 +475,7 @@ def Compare_Iris_Data(k,mutacion_1,mutacion_2,cruce):
         eje_X = eje_X+[cont]
         eje_X1 = eje_X1+[cont]
         eje_Y.append(Lista_Loss[Lista_Indices[0]][-1])
-        eje_Y1.append(Efectividad)
+        eje_Y1.append(Efectividad_aux)
         cont+=1
         
     plt.subplot(2,1,1)   
@@ -511,6 +517,7 @@ def Insertar_Indices(Lista_Indices,i,Lista_Loss):
 # por el w generado aleatoriamente
 def Compare_CFAR_Data(k,mutacion_1,mutacion_2,cruce):
     global Efectividad
+    Efectividad_aux = 0
     # Se trae todos los datos de cfar-10
     #Labels_Test = Load_CFAR_Labels_Test()
     #X_Test = Load_CFAR_Data_Test(Labels_Test)
@@ -520,7 +527,7 @@ def Compare_CFAR_Data(k,mutacion_1,mutacion_2,cruce):
     eje_Y = []
     eje_X1 = []
     eje_Y1 = []
-    valOptimo = 50                                            #Loss óptimo
+    valOptimo = 0.35                                            #% óptimo
     N = 15                                                     #Cantidad de generaciones a evaluar 
     Lista_Loss = []                                             #Guarda el loss para cada clase
     L = 0;                                                      #Contiene la sumatoria de aplicar hinge-loss a cada elemento
@@ -538,14 +545,13 @@ def Compare_CFAR_Data(k,mutacion_1,mutacion_2,cruce):
         Lista_Loss.append(Calculo_Loss(Lista_W[i],X,Index))          #Guarda la lista de loss de clase y de W para cada W generado
         Lista_Indices = Insertar_Indices(Lista_Indices,i,Lista_Loss) #Guarda los índices ordenados de los W del loss menor al mayor
 
-    print(Lista_Loss)
-    print(Lista_Indices)
+    #print(Lista_Loss)
+    #print(Lista_Indices)
     #Algoritmo genético con N repeticiones o hasta que encuentre uno óptimo con Loss <= Optimo
     cont = 1
     for i in range(N):
-        print "\nGeneración: ", i+1
-        optimo = Comprobar_Optimo(valOptimo, Lista_Loss)             #Comprueba si ya hay algún W óptimo
-        if optimo != -1 and i > 1:
+        print "\nGeneración: ", i+1             #Comprueba si ya hay algún W óptimo
+        if Efectividad_aux>valOptimo and i > 1:
             plt.subplot(2,1,1)   
             plt.plot(eje_X1,eje_Y1)
             plt.xlabel('Generation')
@@ -572,6 +578,12 @@ def Compare_CFAR_Data(k,mutacion_1,mutacion_2,cruce):
         for i in range(k):
             Lista_Loss[i] = Calculo_Loss(Lista_W[i],X,Index)
             Lista_Indices = Insertar_Indices(Lista_Indices,i,Lista_Loss)
+
+            if Efectividad_aux < Efectividad:
+                Efectividad_aux = Efectividad 
+        
+
+        print "Efectividad: ", Efectividad_aux
           
         #Este codigo es si se quiere sacar el promedio general del loss de toda la poblacion
         """
@@ -586,7 +598,7 @@ def Compare_CFAR_Data(k,mutacion_1,mutacion_2,cruce):
         eje_X = eje_X+[cont]
         eje_X1 = eje_X1+[cont]
         eje_Y.append(Lista_Loss[Lista_Indices[0]][-1])
-        eje_Y1.append(Efectividad)
+        eje_Y1.append(Efectividad_aux)
         cont+=1
         
     plt.subplot(2,1,1)   
@@ -614,8 +626,8 @@ def Hinge_Loss(s,yi):
             hinge_loss += np.sum(np.maximum(0,s[i]-s[yi]+1),axis=0)
     return hinge_loss
 
-#Compare_Iris_Data(20,0.8,0.6,0.8)   #(TamañoPoblación,CantWParaMutar,CuántoCambioEnGenes,cruce)
-Compare_CFAR_Data(40,0.8,0.60,0.8)
+#Compare_Iris_Data(50,0.8,0.6,0.8)   #(TamañoPoblación,CantWParaMutar,CuántoCambioEnGenes,cruce)
+Compare_CFAR_Data(20,0.8,0.60,0.8)
 
 #Algoritmo genético
 #Parámetros:
