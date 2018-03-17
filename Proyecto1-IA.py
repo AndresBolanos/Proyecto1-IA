@@ -6,6 +6,7 @@ import pickle
 import collections
 import random
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
 rango = [[4.3,7.9],[2.0,4.4],[1.0,6.9],[0.1,2.5]]
 ####################################### LOAD IRIS DATA #######################################
@@ -425,16 +426,16 @@ def Compare_Iris_Data(k,mutacion_1,mutacion_2,cruce):
         Lista_W.append(Generate_W(len(Class),len(X[0])))             #Genera el w aleatorio ##Automaticamente en la funcion que genera el +1 del Bias Trick
         Lista_Loss.append(Calculo_Loss(Lista_W[i],X,Index))          #Guarda la lista de loss de clase y de W para cada W generado
         Lista_Indices = Insertar_Indices(Lista_Indices,i,Lista_Loss) #Guarda los índices ordenados de los W del loss menor al mayor
-    
+
     #Algoritmo genético con N repeticiones o hasta que encuentre uno óptimo con Loss <= Optimo
     cont = 1
     for i in range(N):
         print "\nGeneración: ", i+1            #Comprueba si ya hay algún W óptimo
         print "Optimo: ", valOptimo
         if Efectividad_aux >= valOptimo and i > 1:
+            plt.title('Generation VS Efectividad')
             plt.subplot(2,1,1)   
             plt.plot(eje_X1,eje_Y1)
-            plt.xlabel('Generation')
             plt.ylabel('% Efectividad')
             plt.grid(True)
             plt.subplot(2,1,2)   
@@ -482,11 +483,11 @@ def Compare_Iris_Data(k,mutacion_1,mutacion_2,cruce):
     plt.plot(eje_X1,eje_Y1)
     plt.ylabel('% Efectividad')
     plt.title('Generation VS Efectividad')
+    plt.grid(True)
     plt.subplot(2,1,2)   
     plt.plot(eje_X,eje_Y)
     plt.xlabel('Generation')
     plt.ylabel('Loss')
-    plt.title('Generation VS Loss')
     plt.grid(True)  # Activa cuadrícula del gráfico pero no se muestra
     plt.show()
     print "\nNo hay óptimo"
@@ -511,7 +512,35 @@ def Insertar_Indices(Lista_Indices,i,Lista_Loss):
                     Lista_Indices = Lista_Indices+[i]
                     return Lista_Indices
 
-                
+#Funcion para generar cada imagen para mostrar                
+def GenerarImagenes(img1,img2,img3,img4):
+    cont = 0
+    matriz1 = []
+    matriz2 = []
+    matriz3 = []
+    matriz4 = []
+    img1_aux = []
+    img2_aux = []
+    img3_aux = []
+    img4_aux = []
+    for i in range(1024):
+        if cont == 31:
+            matriz1.append(img1_aux)
+            matriz2.append(img2_aux)
+            matriz3.append(img3_aux)
+            matriz4.append(img4_aux)
+            cont = 0
+            img1_aux = []
+            img2_aux = []
+            img3_aux = []
+            img4_aux = []
+        else:
+            img1_aux.append(img1[i])
+            img2_aux.append(img2[i])
+            img3_aux.append(img3[i])
+            img4_aux.append(img4[i])
+            cont+=1
+    return matriz1,matriz2,matriz3,matriz4
     
 # Funcion para multiplicar cada elemento de cfar
 # por el w generado aleatoriamente
@@ -528,7 +557,7 @@ def Compare_CFAR_Data(k,mutacion_1,mutacion_2,cruce):
     eje_X1 = []
     eje_Y1 = []
     valOptimo = 0.35                                            #% óptimo
-    N = 15                                                     #Cantidad de generaciones a evaluar 
+    N = 15                                                    #Cantidad de generaciones a evaluar 
     Lista_Loss = []                                             #Guarda el loss para cada clase
     L = 0;                                                      #Contiene la sumatoria de aplicar hinge-loss a cada elemento
     Index = Load_CFAR_Labels()
@@ -552,9 +581,9 @@ def Compare_CFAR_Data(k,mutacion_1,mutacion_2,cruce):
     for i in range(N):
         print "\nGeneración: ", i+1             #Comprueba si ya hay algún W óptimo
         if Efectividad_aux>valOptimo and i > 1:
+            plt.title('Generation VS Loss')
             plt.subplot(2,1,1)   
             plt.plot(eje_X1,eje_Y1)
-            plt.xlabel('Generation')
             plt.ylabel('% Efectividad')
             plt.grid(True)
             plt.subplot(2,1,2)   
@@ -601,15 +630,23 @@ def Compare_CFAR_Data(k,mutacion_1,mutacion_2,cruce):
         eje_Y1.append(Efectividad_aux)
         cont+=1
         
+    pos = Lista_Indices[0]
+    res = GenerarImagenes(Lista_W[pos][0],Lista_W[pos][1],Lista_W[pos][2],Lista_W[pos][3])
+    fig=plt.figure()
+    for i in range(4):
+        fig.add_subplot(2, 2, i+1)
+        plt.imshow(res[i], cmap= plt.cm.binary)
+    plt.show()
+    
     plt.subplot(2,1,1)   
     plt.plot(eje_X1,eje_Y1)
     plt.ylabel('% Efectividad')
     plt.title('Generation VS Efectividad')
+    plt.grid(True)
     plt.subplot(2,1,2)   
     plt.plot(eje_X,eje_Y)
     plt.xlabel('Generation')
     plt.ylabel('Loss')
-    plt.title('Generation VS Loss')
     plt.grid(True)  # Activa cuadrícula del gráfico pero no se muestra
     plt.show()
     print "\nNo hay óptimo"
